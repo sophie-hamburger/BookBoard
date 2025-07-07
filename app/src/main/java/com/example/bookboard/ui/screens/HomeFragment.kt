@@ -19,7 +19,7 @@ class HomeFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        binding.addPostButton.setOnClickListener {
+        binding.addBookFab.setOnClickListener {
             findNavController().navigate(R.id.action_homeFragment_to_createPostFragment)
         }
     }
