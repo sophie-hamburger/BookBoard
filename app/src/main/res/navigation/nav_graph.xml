@@ -1,19 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:startDestination="@id/homeFragment">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.bookboard.ui.screens.LoginFragment"
+        android:label="@string/title_login"
+        tools:layout="@layout/fragment_login" />
+
+    <fragment
+        android:id="@+id/signupFragment"
+        android:name="com.example.bookboard.ui.screens.SignupFragment"
+        android:label="@string/title_signup"
+        tools:layout="@layout/fragment_signup" />
 
     <fragment
         android:id="@+id/homeFragment"
-        android:name="com.example.bookboard.ui.HomeFragment"
-        android:label="Home">
-        <action
-            android:id="@+id/action_homeFragment_to_createPostFragment"
-            app:destination="@id/createPostFragment" />
-    </fragment>
+        android:name="com.example.bookboard.ui.screens.HomeFragment"
+        android:label="@string/title_home"
+        tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/createPostFragment"
-        android:name="com.example.bookboard.ui.CreatePostFragment"
-        android:label="CreatePost" />
+        android:id="@+id/addBookFragment"
+        android:name="com.example.bookboard.ui.screens.AddBookFragment"
+        android:label="@string/title_add_post"
+        tools:layout="@layout/fragment_add_book" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.bookboard.ui.screens.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/editPostFragment"
+        android:name="com.example.bookboard.ui.screens.EditPostFragment"
+        android:label="Edit Post"
+        tools:layout="@layout/fragment_edit_post">
+        <argument
+            android:name="postId"
+            app:argType="string" />
+    </fragment>
+
+    <!-- Navigation actions -->
+    <action
+        android:id="@+id/action_loginFragment_to_homeFragment"
+        app:destination="@id/homeFragment"
+        app:popUpTo="@id/loginFragment"
+        app:popUpToInclusive="true" />
+
+    <action
+        android:id="@+id/action_signupFragment_to_homeFragment"
+        app:destination="@id/homeFragment"
+        app:popUpTo="@id/loginFragment"
+        app:popUpToInclusive="true" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_addBookFragment"
+        app:destination="@id/addBookFragment" />
+
+    <action
+        android:id="@+id/action_addBookFragment_to_homeFragment"
+        app:destination="@id/homeFragment"
+        app:popUpTo="@id/homeFragment"
+        app:popUpToInclusive="true" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_profileFragment"
+        app:destination="@id/profileFragment" />
+
+    <action
+        android:id="@+id/action_profileFragment_to_loginFragment"
+        app:destination="@id/loginFragment"
+        app:popUpTo="@id/loginFragment"
+        app:popUpToInclusive="true" />
+
+    <action
+        android:id="@+id/action_profileFragment_to_editPostFragment"
+        app:destination="@id/editPostFragment" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_loginFragment"
+        app:destination="@id/loginFragment"
+        app:popUpTo="@id/homeFragment"
+        app:popUpToInclusive="true" />
 </navigation>
