@@ -37,7 +37,6 @@ class BookAdapter(
                 tvTitle.text = post.title
                 tvAuthor.text = post.author
                 tvReview.text = post.review
-                tvUserName.text = post.userName
                 ratingBar.rating = post.rating
                 
                 // Load image if path exists

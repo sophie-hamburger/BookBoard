@@ -27,6 +27,13 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
+    // Callback to refresh posts when user changes
+    private var onUserChanged: (() -> Unit)? = null
+
+    fun setOnUserChangedListener(listener: () -> Unit) {
+        onUserChanged = listener
+    }
+
     init {
         _currentUser.value = auth.currentUser
         auth.currentUser?.let { user ->
@@ -52,6 +59,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                             _currentUser.value = firebaseUser
                             _userProfile.value = newUser
                             _isLoading.value = false
+                            onUserChanged?.invoke()
                         }
                     }
                 } else {
@@ -69,6 +77,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     user?.let { firebaseUser ->
                         _currentUser.value = firebaseUser
                         loadUserProfile(firebaseUser.uid)
+                        onUserChanged?.invoke()
                     }
                 }
                 _isLoading.value = false
@@ -79,15 +88,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         auth.signOut()
         _currentUser.value = null
         _userProfile.value = null
+        onUserChanged?.invoke()
     }
 
     private fun loadUserProfile(userId: String) {
         viewModelScope.launch {
             try {
                 userRepository.syncUserFromFirestore(userId)
-                userRepository.getUserById(userId).observeForever { user ->
-                    _userProfile.value = user
-                }
+                // Get user data directly without using observeForever
+                val user = userRepository.getUserByIdDirect(userId)
+                _userProfile.value = user
             } catch (e: Exception) {
                 // Handle error silently
             }

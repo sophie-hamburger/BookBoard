@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.bookboard.data.AppDatabase
 import com.example.bookboard.model.BookPost
 import com.example.bookboard.repository.BookPostRepository
+import com.example.bookboard.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.util.*
@@ -16,6 +17,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
 
     private val database = AppDatabase.getDatabase(application)
     private val repository = BookPostRepository(database.bookPostDao())
+    private val userRepository = UserRepository(database.userDao())
     private val auth = FirebaseAuth.getInstance()
 
     private val _posts = MutableLiveData<List<BookPost>>()
@@ -39,15 +41,24 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
         _errorMessage.value = ""
     }
 
+    fun refreshPosts() {
+        // Clear current data first
+        _posts.value = emptyList()
+        _userPosts.value = emptyList()
+
+        // Then reload
+        loadAllPosts()
+        loadUserPosts()
+    }
+
     fun loadAllPosts() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 repository.syncPostsFromFirestore()
-                repository.getAllPosts().observeForever { posts ->
-                    _posts.value = posts
-                    _isLoading.value = false
-                }
+                val posts = repository.getAllPostsDirect()
+                _posts.value = posts
+                _isLoading.value = false
             } catch (e: Exception) {
                 _isLoading.value = false
                 _errorMessage.value = e.message ?: "Failed to load posts"
@@ -59,9 +70,8 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
         val currentUser = auth.currentUser ?: return
         viewModelScope.launch {
             try {
-                repository.getPostsByUser(currentUser.uid).observeForever { posts ->
-                    _userPosts.value = posts
-                }
+                val posts = repository.getPostsByUserDirect(currentUser.uid)
+                _userPosts.value = posts
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to load user posts"
             }
@@ -71,21 +81,26 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
     fun createPost(title: String, author: String, review: String, rating: Float, imagePath: String) {
         val currentUser = auth.currentUser ?: return
 
-        val post = BookPost(
-            id = UUID.randomUUID().toString(),
-            userId = currentUser.uid,
-            userName = currentUser.displayName ?: "Anonymous",
-            title = title,
-            author = author,
-            review = review,
-            rating = rating,
-            imagePath = imagePath
-        )
-
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                val post = BookPost(
+                    id = UUID.randomUUID().toString(),
+                    userId = currentUser.uid,
+                    userName = "User", // Simple default
+                    title = title,
+                    author = author,
+                    review = review,
+                    rating = rating,
+                    imagePath = imagePath
+                )
+
                 repository.insertPost(post)
+
+                // Refresh posts after creating new post
+                loadAllPosts()
+                loadUserPosts()
+
                 _isLoading.value = false
             } catch (e: Exception) {
                 _isLoading.value = false
@@ -99,6 +114,11 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
             _isLoading.value = true
             try {
                 repository.updatePost(post)
+
+                // Refresh posts after updating
+                loadAllPosts()
+                loadUserPosts()
+
                 _isLoading.value = false
             } catch (e: Exception) {
                 _isLoading.value = false
@@ -112,6 +132,11 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
             _isLoading.value = true
             try {
                 repository.deletePost(post)
+
+                // Refresh posts after deleting
+                loadAllPosts()
+                loadUserPosts()
+
                 _isLoading.value = false
             } catch (e: Exception) {
                 _isLoading.value = false

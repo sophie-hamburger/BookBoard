@@ -12,20 +12,26 @@ class UserRepository(
     private val userDao: UserDao,
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    
+
     fun getUserById(userId: String): LiveData<User?> {
         return userDao.getUserById(userId)
     }
-    
+
+    suspend fun getUserByIdDirect(userId: String): User? {
+        return withContext(Dispatchers.IO) {
+            userDao.getUserByIdDirect(userId)
+        }
+    }
+
     suspend fun getUserByEmail(email: String): User? {
         return userDao.getUserByEmail(email)
     }
-    
+
     suspend fun insertUser(user: User) {
         withContext(Dispatchers.IO) {
             // Save to local database
             userDao.insertUser(user)
-            
+
             // Save to Firestore
             try {
                 firestore.collection("users").document(user.id).set(user).await()
@@ -34,12 +40,12 @@ class UserRepository(
             }
         }
     }
-    
+
     suspend fun updateUser(user: User) {
         withContext(Dispatchers.IO) {
             // Update local database
             userDao.updateUser(user)
-            
+
             // Update Firestore
             try {
                 firestore.collection("users").document(user.id).set(user).await()
@@ -48,12 +54,12 @@ class UserRepository(
             }
         }
     }
-    
+
     suspend fun deleteUser(user: User) {
         withContext(Dispatchers.IO) {
             // Delete from local database
             userDao.deleteUser(user)
-            
+
             // Delete from Firestore
             try {
                 firestore.collection("users").document(user.id).delete().await()
@@ -62,7 +68,7 @@ class UserRepository(
             }
         }
     }
-    
+
     suspend fun syncUserFromFirestore(userId: String) {
         withContext(Dispatchers.IO) {
             try {
@@ -76,4 +82,4 @@ class UserRepository(
             }
         }
     }
-} 
+}

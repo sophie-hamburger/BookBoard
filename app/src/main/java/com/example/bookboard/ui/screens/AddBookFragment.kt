@@ -21,14 +21,14 @@ import com.squareup.picasso.Picasso
 import java.io.File
 
 class AddBookFragment : Fragment() {
-    
+
     private var _binding: FragmentAddBookBinding? = null
     private val binding get() = _binding!!
-    
+
     private val bookPostViewModel: BookPostViewModel by activityViewModels()
     private val authViewModel: AuthViewModel by activityViewModels()
     private var selectedImagePath: String = ""
-    
+
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -38,7 +38,7 @@ class AddBookFragment : Fragment() {
             }
         }
     }
-    
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -47,36 +47,36 @@ class AddBookFragment : Fragment() {
         _binding = FragmentAddBookBinding.inflate(inflater, container, false)
         return binding.root
     }
-    
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         setupObservers()
         setupClickListeners()
     }
-    
+
     private fun setupObservers() {
         bookPostViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             binding.btnAddPost.isEnabled = !isLoading
         }
     }
-    
+
     private fun setupClickListeners() {
         binding.btnAddPost.setOnClickListener {
             createPost()
         }
-        
+
         binding.btnSelectImage.setOnClickListener {
             openImagePicker()
         }
     }
-    
+
     private fun openImagePicker() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         imagePickerLauncher.launch(intent)
     }
-    
+
     private fun handleImageSelection(uri: Uri) {
         context?.let { context ->
             val imagePath = ImageUtils.saveImageToInternalStorage(context, uri)
@@ -95,39 +95,39 @@ class AddBookFragment : Fragment() {
             }
         }
     }
-    
+
     private fun createPost() {
         val title = binding.etTitle.text.toString().trim()
         val author = binding.etAuthor.text.toString().trim()
         val review = binding.etReview.text.toString().trim()
         val rating = binding.ratingBar.rating
-        
+
         if (validateInput(title, author, review)) {
             bookPostViewModel.createPost(title, author, review, rating, selectedImagePath)
             Toast.makeText(context, "Post created successfully!", Toast.LENGTH_SHORT).show()
             findNavController().navigateUp()
         }
     }
-    
+
     private fun validateInput(title: String, author: String, review: String): Boolean {
         if (title.isEmpty()) {
             binding.etTitle.error = "Title is required"
             return false
         }
-        
+
         if (author.isEmpty()) {
             binding.etAuthor.error = "Author is required"
             return false
         }
-        
+
         if (review.isEmpty()) {
             binding.etReview.error = "Review is required"
             return false
         }
-        
+
         return true
     }
-    
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

@@ -75,17 +75,6 @@
             app:layout_constraintTop_toBottomOf="@id/ivBookCover"
             tools:text="This is a sample review text that describes the book..." />
 
-        <TextView
-            android:id="@+id/tvUserName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvReview"
-            tools:text="Posted by John Doe" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

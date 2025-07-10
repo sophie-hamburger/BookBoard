@@ -12,24 +12,36 @@ class BookPostRepository(
     private val bookPostDao: BookPostDao,
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    
+
     fun getAllPosts(): LiveData<List<BookPost>> {
         return bookPostDao.getAllPosts()
     }
-    
+
+    suspend fun getAllPostsDirect(): List<BookPost> {
+        return withContext(Dispatchers.IO) {
+            bookPostDao.getAllPostsDirect()
+        }
+    }
+
     fun getPostsByUser(userId: String): LiveData<List<BookPost>> {
         return bookPostDao.getPostsByUser(userId)
     }
-    
+
+    suspend fun getPostsByUserDirect(userId: String): List<BookPost> {
+        return withContext(Dispatchers.IO) {
+            bookPostDao.getPostsByUserDirect(userId)
+        }
+    }
+
     suspend fun getPostById(postId: String): BookPost? {
         return bookPostDao.getPostById(postId)
     }
-    
+
     suspend fun insertPost(post: BookPost) {
         withContext(Dispatchers.IO) {
             // Save to local database
             bookPostDao.insertPost(post)
-            
+
             // Save to Firestore
             try {
                 firestore.collection("posts").document(post.id).set(post).await()
@@ -38,12 +50,12 @@ class BookPostRepository(
             }
         }
     }
-    
+
     suspend fun updatePost(post: BookPost) {
         withContext(Dispatchers.IO) {
             // Update local database
             bookPostDao.updatePost(post)
-            
+
             // Update Firestore
             try {
                 firestore.collection("posts").document(post.id).set(post).await()
@@ -52,12 +64,12 @@ class BookPostRepository(
             }
         }
     }
-    
+
     suspend fun deletePost(post: BookPost) {
         withContext(Dispatchers.IO) {
             // Delete from local database
             bookPostDao.deletePost(post)
-            
+
             // Delete from Firestore
             try {
                 firestore.collection("posts").document(post.id).delete().await()
@@ -66,7 +78,7 @@ class BookPostRepository(
             }
         }
     }
-    
+
     suspend fun syncPostsFromFirestore() {
         withContext(Dispatchers.IO) {
             try {
@@ -74,7 +86,7 @@ class BookPostRepository(
                 val posts = snapshot.documents.mapNotNull { doc ->
                     doc.toObject(BookPost::class.java)?.copy(id = doc.id)
                 }
-                
+
                 // Clear local database and insert fresh data
                 bookPostDao.deleteAllPosts()
                 posts.forEach { post ->
@@ -85,4 +97,4 @@ class BookPostRepository(
             }
         }
     }
-} 
+}
