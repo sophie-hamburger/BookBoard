@@ -34,7 +34,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun signUp(email: String, password: String, name: String) {
+    fun signUp(email: String, password: String, name: String, profileImagePath: String = "") {
         _isLoading.value = true
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -44,7 +44,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         val newUser = User(
                             id = firebaseUser.uid,
                             email = email,
-                            name = name
+                            name = name,
+                            profileImagePath = profileImagePath
                         )
                         viewModelScope.launch {
                             userRepository.insertUser(newUser)
@@ -96,6 +97,20 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     fun updateUserProfile(name: String) {
         val currentUser = _currentUser.value ?: return
         val updatedUser = _userProfile.value?.copy(name = name) ?: return
+
+        viewModelScope.launch {
+            try {
+                userRepository.updateUser(updatedUser)
+                _userProfile.value = updatedUser
+            } catch (e: Exception) {
+                // Handle error silently
+            }
+        }
+    }
+
+    fun updateProfilePicture(profileImagePath: String) {
+        val currentUser = _currentUser.value ?: return
+        val updatedUser = _userProfile.value?.copy(profileImagePath = profileImagePath) ?: return
 
         viewModelScope.launch {
             try {
