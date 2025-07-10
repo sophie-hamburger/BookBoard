@@ -29,6 +29,7 @@
 
     <!-- Home -->
     <string name="text_no_posts">No book reviews yet. Be the first to share!</string>
+    <string name="hint_search">Search by title or author</string>
 
     <!-- Profile -->
     <string name="text_my_posts">My Posts</string>

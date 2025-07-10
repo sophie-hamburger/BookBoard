@@ -32,6 +32,9 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
+    // Simple search state
+    private var currentSearchQuery = ""
+
     init {
         loadAllPosts()
         loadUserPosts()
@@ -57,7 +60,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
             try {
                 repository.syncPostsFromFirestore()
                 val posts = repository.getAllPostsDirect()
-                _posts.value = posts
+                applySearch(posts)
                 _isLoading.value = false
             } catch (e: Exception) {
                 _isLoading.value = false
@@ -76,6 +79,35 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
                 _errorMessage.value = e.message ?: "Failed to load user posts"
             }
         }
+    }
+
+    fun searchPosts(query: String) {
+        currentSearchQuery = query
+        viewModelScope.launch {
+            try {
+                val allPosts = repository.getAllPostsDirect()
+                applySearch(allPosts)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Failed to search posts"
+            }
+        }
+    }
+
+    private fun applySearch(posts: List<BookPost>) {
+        var filteredPosts = posts
+
+        // Apply search filter
+        if (currentSearchQuery.isNotEmpty()) {
+            filteredPosts = posts.filter { post ->
+                post.title.contains(currentSearchQuery, ignoreCase = true) ||
+                        post.author.contains(currentSearchQuery, ignoreCase = true)
+            }
+        }
+
+        // Always sort by newest first
+        filteredPosts = filteredPosts.sortedByDescending { it.timestamp }
+
+        _posts.value = filteredPosts
     }
 
     fun createPost(title: String, author: String, review: String, rating: Float, imagePath: String) {
