@@ -1,6 +1,5 @@
 package com.example.bookboard.repository
 
-import androidx.lifecycle.LiveData
 import com.example.bookboard.data.BookPostDao
 import com.example.bookboard.model.BookPost
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,23 +12,15 @@ class BookPostRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
-    fun getAllPosts(): LiveData<List<BookPost>> {
-        return bookPostDao.getAllPosts()
-    }
-
-    suspend fun getAllPostsDirect(): List<BookPost> {
+    suspend fun getAllPosts(): List<BookPost> {
         return withContext(Dispatchers.IO) {
-            bookPostDao.getAllPostsDirect()
+            bookPostDao.getAllPosts()
         }
     }
 
-    fun getPostsByUser(userId: String): LiveData<List<BookPost>> {
-        return bookPostDao.getPostsByUser(userId)
-    }
-
-    suspend fun getPostsByUserDirect(userId: String): List<BookPost> {
+    suspend fun getPostsByUser(userId: String): List<BookPost> {
         return withContext(Dispatchers.IO) {
-            bookPostDao.getPostsByUserDirect(userId)
+            bookPostDao.getPostsByUser(userId)
         }
     }
 

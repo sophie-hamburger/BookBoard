@@ -1,6 +1,5 @@
 package com.example.bookboard.repository
 
-import androidx.lifecycle.LiveData
 import com.example.bookboard.data.UserDao
 import com.example.bookboard.model.User
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,18 +12,10 @@ class UserRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
-    fun getUserById(userId: String): LiveData<User?> {
-        return userDao.getUserById(userId)
-    }
-
-    suspend fun getUserByIdDirect(userId: String): User? {
+    suspend fun getUserById(userId: String): User? {
         return withContext(Dispatchers.IO) {
-            userDao.getUserByIdDirect(userId)
+            userDao.getUserById(userId)
         }
-    }
-
-    suspend fun getUserByEmail(email: String): User? {
-        return userDao.getUserByEmail(email)
     }
 
     suspend fun insertUser(user: User) {

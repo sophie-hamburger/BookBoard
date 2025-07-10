@@ -96,7 +96,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 userRepository.syncUserFromFirestore(userId)
                 // Get user data directly without using observeForever
-                val user = userRepository.getUserByIdDirect(userId)
+                val user = userRepository.getUserById(userId)
                 _userProfile.value = user
             } catch (e: Exception) {
                 // Handle error silently

@@ -59,7 +59,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
             _isLoading.value = true
             try {
                 repository.syncPostsFromFirestore()
-                val posts = repository.getAllPostsDirect()
+                val posts = repository.getAllPosts()
                 applySearch(posts)
                 _isLoading.value = false
             } catch (e: Exception) {
@@ -73,7 +73,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
         val currentUser = auth.currentUser ?: return
         viewModelScope.launch {
             try {
-                val posts = repository.getPostsByUserDirect(currentUser.uid)
+                val posts = repository.getPostsByUser(currentUser.uid)
                 _userPosts.value = posts
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to load user posts"
@@ -85,7 +85,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
         currentSearchQuery = query
         viewModelScope.launch {
             try {
-                val allPosts = repository.getAllPostsDirect()
+                val allPosts = repository.getAllPosts()
                 applySearch(allPosts)
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to search posts"
