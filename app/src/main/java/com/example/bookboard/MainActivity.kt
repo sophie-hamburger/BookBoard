@@ -1,17 +1,30 @@
 package com.example.bookboard
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
+import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.viewModels
+import androidx.navigation.fragment.NavHostFragment
+import com.example.bookboard.databinding.ActivityMainBinding
+import com.example.bookboard.viewmodel.AuthViewModel
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+    private val authViewModel: AuthViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                Text(text = "Hello Book Board!")
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
+
+        // Check if user is logged in
+        authViewModel.currentUser.observe(this) { user ->
+            if (user == null) {
+                navController.navigate(R.id.loginFragment)
             }
         }
     }

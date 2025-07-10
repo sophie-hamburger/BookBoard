@@ -1,3 +1,52 @@
 <resources>
     <string name="app_name">BookBoard</string>
+
+    <!-- Navigation -->
+    <string name="title_login">Login</string>
+    <string name="title_signup">Sign Up</string>
+    <string name="title_home">Home</string>
+    <string name="title_add_post">Add Book Review</string>
+
+    <!-- Login/Signup -->
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="hint_name">Name</string>
+    <string name="btn_login">Login</string>
+    <string name="btn_signup">Sign Up</string>
+    <string name="text_no_account">Don\'t have an account?</string>
+    <string name="text_have_account">Already have an account?</string>
+    <string name="link_signup">Sign Up</string>
+    <string name="link_login">Login</string>
+    <string name="btn_choose_profile_picture">Choose Profile Picture</string>
+    <string name="btn_update_profile_picture">Update Profile Picture</string>
+
+    <!-- Add Book -->
+    <string name="hint_book_title">Book Title</string>
+    <string name="hint_author">Author</string>
+    <string name="hint_review">Your Review</string>
+    <string name="text_rating">Rating</string>
+    <string name="btn_add_post">Add Post</string>
+
+    <!-- Home -->
+    <string name="text_no_posts">No book reviews yet. Be the first to share!</string>
+
+    <!-- Profile -->
+    <string name="text_my_posts">My Posts</string>
+    <string name="text_no_user_posts">You haven\'t posted any book reviews yet.</string>
+    <string name="btn_save_profile">Save Profile</string>
+    <string name="btn_logout">Logout</string>
+    <string name="btn_profile">Profile</string>
+
+    <!-- Edit Post -->
+    <string name="btn_update_post">Update Post</string>
+    <string name="btn_delete_post">Delete Post</string>
+    <string name="text_edit_post">Edit Post</string>
+
+    <!-- Messages -->
+    <string name="msg_profile_updated">Profile updated</string>
+    <string name="msg_profile_picture_updated">Profile picture updated</string>
+    <string name="msg_failed_to_save_image">Failed to save image</string>
+    <string name="msg_post_updated">Post updated successfully!</string>
+    <string name="msg_post_deleted">Post deleted successfully!</string>
+    <string name="msg_post_created">Post created successfully!</string>
 </resources>
