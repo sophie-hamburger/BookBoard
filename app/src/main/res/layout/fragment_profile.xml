@@ -120,6 +120,7 @@
         android:textStyle="bold"
         android:layout_marginBottom="16dp" />
 
+    <!--spinner to sync data -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"

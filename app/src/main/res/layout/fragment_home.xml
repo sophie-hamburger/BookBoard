@@ -38,7 +38,7 @@
                 android:imeOptions="actionSearch" />
 
         </com.google.android.material.textfield.TextInputLayout>
-
+        <!--spinner to sync data -->
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeRefreshLayout"
             android:layout_width="0dp"
