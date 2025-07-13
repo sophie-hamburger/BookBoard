@@ -104,6 +104,10 @@ class EditPostFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         binding.btnUpdatePost.setOnClickListener {
             updatePost()
         }
