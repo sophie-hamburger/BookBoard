@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.bookboard.R
 import com.example.bookboard.adapter.BookAdapter
 import com.example.bookboard.databinding.FragmentProfileBinding
@@ -70,6 +71,7 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
+        setupSwipeRefresh()
         setupObservers()
         setupClickListeners()
     }
@@ -84,6 +86,12 @@ class ProfileFragment : Fragment() {
         binding.recyclerViewUserPosts.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = userPostsAdapter
+        }
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            bookPostViewModel.refreshPosts()
         }
     }
 
@@ -104,6 +112,8 @@ class ProfileFragment : Fragment() {
         }
 
         bookPostViewModel.userPosts.observe(viewLifecycleOwner) { posts ->
+            binding.swipeRefreshLayout.isRefreshing = false
+
             if (posts.isEmpty()) {
                 binding.tvNoUserPosts.visibility = View.VISIBLE
                 binding.recyclerViewUserPosts.visibility = View.GONE

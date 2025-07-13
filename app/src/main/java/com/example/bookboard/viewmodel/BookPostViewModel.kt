@@ -130,8 +130,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
                 repository.insertPost(post)
 
                 // Refresh posts after creating new post
-                loadAllPosts()
-                loadUserPosts()
+                refreshPosts()
 
                 _isLoading.value = false
             } catch (e: Exception) {
@@ -148,8 +147,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
                 repository.updatePost(post)
 
                 // Refresh posts after updating
-                loadAllPosts()
-                loadUserPosts()
+                refreshPosts()
 
                 _isLoading.value = false
             } catch (e: Exception) {
@@ -166,8 +164,7 @@ class BookPostViewModel(application: Application) : AndroidViewModel(application
                 repository.deletePost(post)
 
                 // Refresh posts after deleting
-                loadAllPosts()
-                loadUserPosts()
+                refreshPosts()
 
                 _isLoading.value = false
             } catch (e: Exception) {

@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.bookboard.R
 import com.example.bookboard.adapter.BookAdapter
 import com.example.bookboard.databinding.FragmentHomeBinding
@@ -38,6 +39,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
+        setupSwipeRefresh()
         setupObservers()
         setupClickListeners()
         setupSearchListener()
@@ -54,8 +56,16 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            bookPostViewModel.refreshPosts()
+        }
+    }
+
     private fun setupObservers() {
         bookPostViewModel.posts.observe(viewLifecycleOwner) { posts ->
+            binding.swipeRefreshLayout.isRefreshing = false
+
             if (posts.isEmpty()) {
                 binding.tvNoPosts.visibility = View.VISIBLE
                 binding.recyclerView.visibility = View.GONE
