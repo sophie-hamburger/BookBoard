@@ -7,14 +7,34 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Back Button and Title Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Profile"
-        android:textSize="24sp"
-        android:textStyle="bold"
+        android:orientation="horizontal"
         android:layout_marginBottom="24dp"
-        android:textColor="?attr/colorPrimary" />
+        android:gravity="center_vertical">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:padding="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Profile"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center_vertical"
+            android:textColor="?attr/colorPrimary" />
+
+    </LinearLayout>
 
     <!-- Profile Picture Section -->
     <LinearLayout

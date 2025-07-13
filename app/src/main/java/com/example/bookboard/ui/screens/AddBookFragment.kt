@@ -63,6 +63,10 @@ class AddBookFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         binding.btnAddPost.setOnClickListener {
             createPost()
         }

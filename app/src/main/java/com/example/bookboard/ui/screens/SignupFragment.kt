@@ -73,6 +73,10 @@ class SignupFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         binding.btnChooseProfilePicture.setOnClickListener {
             openImagePicker()
         }
