@@ -56,12 +56,13 @@ dependencies {
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.swiperefreshlayout)
     kapt(libs.androidx.room.compiler)
 
-    // ViewModel and LiveData
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
+    // Lifecycle (for coroutines)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+
+    // SwipeRefreshLayout
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // Navigation
     implementation(libs.androidx.navigation.fragment.ktx)
