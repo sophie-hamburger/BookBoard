@@ -11,16 +11,17 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.bookboard.R
 import com.example.bookboard.adapter.BookAdapter
+import com.example.bookboard.controller.AuthController
+import com.example.bookboard.controller.BookPostController
 import com.example.bookboard.databinding.FragmentProfileBinding
+import com.example.bookboard.model.BookPost
+import com.example.bookboard.model.User
 import com.example.bookboard.utils.ImageUtils
-import com.example.bookboard.viewmodel.AuthViewModel
-import com.example.bookboard.viewmodel.BookPostViewModel
 import java.io.File
 
 class ProfileFragment : Fragment() {
@@ -28,8 +29,8 @@ class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
 
-    private val authViewModel: AuthViewModel by activityViewModels()
-    private val bookPostViewModel: BookPostViewModel by activityViewModels()
+    private val authController = AuthController()
+    private val bookPostController = BookPostController()
     private lateinit var userPostsAdapter: BookAdapter
 
     private val imagePickerLauncher = registerForActivityResult(
@@ -40,19 +41,13 @@ class ProfileFragment : Fragment() {
                 // Save the image to internal storage
                 val imagePath = ImageUtils.saveProfileImageToInternalStorage(requireContext(), uri)
                 if (imagePath != null) {
-                    // Delete old profile picture if exists
-                    authViewModel.userProfile.value?.profileImagePath?.let { oldPath ->
-                        if (oldPath.isNotEmpty()) {
-                            ImageUtils.deleteImage(oldPath)
-                        }
-                    }
-
-                    // Update profile picture
-                    authViewModel.updateProfilePicture(imagePath)
+                    // Update the profile picture in database
+                    authController.updateProfilePicture(imagePath, this)
+                    // Show immediate feedback
                     binding.ivProfilePicture.setImageURI(uri)
-                    Toast.makeText(context, getString(R.string.msg_profile_picture_updated), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Profile picture updated", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, getString(R.string.msg_failed_to_save_image), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -72,8 +67,8 @@ class ProfileFragment : Fragment() {
 
         setupRecyclerView()
         setupSwipeRefresh()
-        setupObservers()
         setupClickListeners()
+        loadData()
     }
 
     private fun setupRecyclerView() {
@@ -91,37 +86,7 @@ class ProfileFragment : Fragment() {
 
     private fun setupSwipeRefresh() {
         binding.swipeRefreshLayout.setOnRefreshListener {
-            bookPostViewModel.refreshPosts()
-        }
-    }
-
-    private fun setupObservers() {
-        authViewModel.userProfile.observe(viewLifecycleOwner) { user ->
-            user?.let {
-                binding.etProfileName.setText(it.name)
-                binding.tvEmail.text = it.email
-
-                // Load profile picture
-                if (it.profileImagePath.isNotEmpty()) {
-                    val file = File(it.profileImagePath)
-                    if (file.exists()) {
-                        binding.ivProfilePicture.setImageURI(Uri.fromFile(file))
-                    }
-                }
-            }
-        }
-
-        bookPostViewModel.userPosts.observe(viewLifecycleOwner) { posts ->
-            binding.swipeRefreshLayout.isRefreshing = false
-
-            if (posts.isEmpty()) {
-                binding.tvNoUserPosts.visibility = View.VISIBLE
-                binding.recyclerViewUserPosts.visibility = View.GONE
-            } else {
-                binding.tvNoUserPosts.visibility = View.GONE
-                binding.recyclerViewUserPosts.visibility = View.VISIBLE
-                userPostsAdapter.submitList(posts)
-            }
+            bookPostController.refreshUserPosts(this)
         }
     }
 
@@ -137,22 +102,72 @@ class ProfileFragment : Fragment() {
         binding.btnSaveProfile.setOnClickListener {
             val name = binding.etProfileName.text.toString().trim()
             if (name.isNotEmpty()) {
-                authViewModel.updateUserProfile(name)
-                Toast.makeText(context, getString(R.string.msg_profile_updated), Toast.LENGTH_SHORT).show()
+                authController.updateUserProfile(name, this)
+                Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
             } else {
                 binding.etProfileName.error = "Name is required"
             }
         }
 
         binding.btnLogout.setOnClickListener {
-            authViewModel.signOut()
-            findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
+            authController.logoutUser(this)
         }
+    }
+
+    private fun loadData() {
+        authController.loadUserProfile(this)
+        bookPostController.loadUserPosts(this)
     }
 
     private fun openImagePicker() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         imagePickerLauncher.launch(intent)
+    }
+
+    // UI Update Methods (called by controller)
+    fun updateUserProfile(user: User) {
+        binding.etProfileName.setText(user.name)
+        binding.tvEmail.text = user.email
+
+        // Load profile picture
+        if (user.profileImagePath.isNotEmpty()) {
+            val file = File(user.profileImagePath)
+            if (file.exists()) {
+                try {
+                    binding.ivProfilePicture.setImageURI(Uri.fromFile(file))
+                } catch (e: Exception) {
+                    // If there's an error loading the image, show a placeholder
+                    binding.ivProfilePicture.setImageResource(android.R.drawable.ic_menu_camera)
+                }
+            } else {
+                // File doesn't exist, show placeholder
+                binding.ivProfilePicture.setImageResource(android.R.drawable.ic_menu_camera)
+            }
+        } else {
+            // No profile image path, show placeholder
+            binding.ivProfilePicture.setImageResource(android.R.drawable.ic_menu_camera)
+        }
+    }
+
+    fun updateUserPosts(posts: List<BookPost>) {
+        binding.swipeRefreshLayout.isRefreshing = false
+
+        if (posts.isEmpty()) {
+            binding.tvNoUserPosts.visibility = View.VISIBLE
+            binding.recyclerViewUserPosts.visibility = View.GONE
+        } else {
+            binding.tvNoUserPosts.visibility = View.GONE
+            binding.recyclerViewUserPosts.visibility = View.VISIBLE
+            userPostsAdapter.submitList(posts)
+        }
+    }
+
+    fun showError(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun navigateToLogin() {
+        findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
     }
 
     override fun onDestroyView() {

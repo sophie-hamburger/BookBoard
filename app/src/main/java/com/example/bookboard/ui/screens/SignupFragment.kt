@@ -11,20 +11,19 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.example.bookboard.R
+import com.example.bookboard.controller.AuthController
 import com.example.bookboard.databinding.FragmentSignupBinding
 import com.example.bookboard.utils.ImageUtils
-import com.example.bookboard.viewmodel.AuthViewModel
 
 class SignupFragment : Fragment() {
 
     private var _binding: FragmentSignupBinding? = null
     private val binding get() = _binding!!
 
-    private val authViewModel: AuthViewModel by activityViewModels()
-    private var selectedProfileImagePath: String = ""
+    private val authController = AuthController()
+    private var selectedImagePath: String = ""
 
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -34,10 +33,11 @@ class SignupFragment : Fragment() {
                 // Save the image to internal storage
                 val imagePath = ImageUtils.saveProfileImageToInternalStorage(requireContext(), uri)
                 if (imagePath != null) {
-                    selectedProfileImagePath = imagePath
+                    selectedImagePath = imagePath
                     binding.ivProfilePicture.setImageURI(uri)
+                    Toast.makeText(context, "Profile picture selected", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, getString(R.string.msg_failed_to_save_image), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -55,47 +55,32 @@ class SignupFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupObservers()
         setupClickListeners()
     }
 
-    private fun setupObservers() {
-        authViewModel.currentUser.observe(viewLifecycleOwner) { user ->
-            if (user != null) {
-                findNavController().navigate(R.id.action_signupFragment_to_homeFragment)
-            }
-        }
-
-        authViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            binding.btnSignup.isEnabled = !isLoading
-        }
-    }
-
     private fun setupClickListeners() {
-        binding.btnBack.setOnClickListener {
-            findNavController().navigateUp()
+        binding.btnSignup.setOnClickListener {
+            signupUser()
         }
 
         binding.btnChooseProfilePicture.setOnClickListener {
             openImagePicker()
         }
 
-        binding.btnSignup.setOnClickListener {
-            val name = binding.etName.text.toString().trim()
-            val email = binding.etEmail.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
-            val confirmPassword = binding.etConfirmPassword.text.toString().trim()
-
-            if (validateInput(name, email, password, confirmPassword)) {
-                authViewModel.signUp(email, password, name, selectedProfileImagePath)
-            }
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
         }
     }
 
-    private fun openImagePicker() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        imagePickerLauncher.launch(intent)
+    private fun signupUser() {
+        val name = binding.etName.text.toString().trim()
+        val email = binding.etEmail.text.toString().trim()
+        val password = binding.etPassword.text.toString().trim()
+        val confirmPassword = binding.etConfirmPassword.text.toString().trim()
+
+        if (validateInput(name, email, password, confirmPassword)) {
+            authController.signupUser(email, password, name, selectedImagePath, this)
+        }
     }
 
     private fun validateInput(name: String, email: String, password: String, confirmPassword: String): Boolean {
@@ -114,6 +99,11 @@ class SignupFragment : Fragment() {
             return false
         }
 
+        if (password.length < 6) {
+            binding.etPassword.error = "Password must be at least 6 characters"
+            return false
+        }
+
         if (confirmPassword.isEmpty()) {
             binding.etConfirmPassword.error = "Please confirm your password"
             return false
@@ -125,6 +115,25 @@ class SignupFragment : Fragment() {
         }
 
         return true
+    }
+
+    private fun openImagePicker() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        imagePickerLauncher.launch(intent)
+    }
+
+    // UI Update Methods (called by controller)
+    fun showLoading(isLoading: Boolean) {
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.btnSignup.isEnabled = !isLoading
+    }
+
+    fun showError(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun navigateToHome() {
+        findNavController().navigate(R.id.action_signupFragment_to_homeFragment)
     }
 
     override fun onDestroyView() {

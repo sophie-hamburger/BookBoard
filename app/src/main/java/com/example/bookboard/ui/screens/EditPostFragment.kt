@@ -11,27 +11,28 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import com.example.bookboard.controller.BookPostController
 import com.example.bookboard.databinding.FragmentEditPostBinding
 import com.example.bookboard.model.BookPost
 import com.example.bookboard.utils.ImageUtils
-import com.example.bookboard.viewmodel.BookPostViewModel
 import com.squareup.picasso.Picasso
 import java.io.File
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class EditPostFragment : Fragment() {
-    
+
     private var _binding: FragmentEditPostBinding? = null
     private val binding get() = _binding!!
-    
-    private val bookPostViewModel: BookPostViewModel by activityViewModels()
+
+    private val bookPostController = BookPostController()
     private val args: EditPostFragmentArgs by navArgs()
-    
+
     private var currentPost: BookPost? = null
     private var selectedImagePath: String = ""
-    
+
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -41,7 +42,7 @@ class EditPostFragment : Fragment() {
             }
         }
     }
-    
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -50,30 +51,43 @@ class EditPostFragment : Fragment() {
         _binding = FragmentEditPostBinding.inflate(inflater, container, false)
         return binding.root
     }
-    
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        setupObservers()
+
         setupClickListeners()
         loadPost()
     }
-    
+
     private fun loadPost() {
-        // Find the post by ID from the user posts
-        bookPostViewModel.userPosts.value?.find { it.id == args.postId }?.let { post ->
-            currentPost = post
-            selectedImagePath = post.imagePath
-            populateFields(post)
+        // In MVC, we need to get the post from the controller
+        // For now, we'll load it directly from the database
+        val database = com.example.bookboard.data.AppDatabase.getDatabase(requireContext())
+        val repository = com.example.bookboard.repository.BookPostRepository(database.bookPostDao())
+
+        lifecycleScope.launch {
+            try {
+                val posts = repository.getPostsByUser(com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "")
+                val post = posts.find { it.id == args.postId }
+                if (post != null) {
+                    currentPost = post
+                    selectedImagePath = post.imagePath
+                    populateFields(post)
+                } else {
+                    showError("Post not found")
+                }
+            } catch (e: Exception) {
+                showError(e.message ?: "Failed to load post")
+            }
         }
     }
-    
+
     private fun populateFields(post: BookPost) {
         binding.etTitle.setText(post.title)
         binding.etAuthor.setText(post.author)
         binding.etReview.setText(post.review)
         binding.ratingBar.rating = post.rating
-        
+
         // Display image if exists
         if (post.imagePath.isNotEmpty()) {
             val imageFile = File(post.imagePath)
@@ -88,34 +102,26 @@ class EditPostFragment : Fragment() {
             }
         }
     }
-    
-    private fun setupObservers() {
-        bookPostViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            binding.btnUpdatePost.isEnabled = !isLoading
-            binding.btnDeletePost.isEnabled = !isLoading
-        }
-    }
-    
+
     private fun setupClickListeners() {
         binding.btnUpdatePost.setOnClickListener {
             updatePost()
         }
-        
+
         binding.btnDeletePost.setOnClickListener {
             deletePost()
         }
-        
+
         binding.btnSelectImage.setOnClickListener {
             openImagePicker()
         }
     }
-    
+
     private fun openImagePicker() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         imagePickerLauncher.launch(intent)
     }
-    
+
     private fun handleImageSelection(uri: Uri) {
         context?.let { context ->
             val imagePath = ImageUtils.saveImageToInternalStorage(context, uri)
@@ -134,13 +140,13 @@ class EditPostFragment : Fragment() {
             }
         }
     }
-    
+
     private fun updatePost() {
         val title = binding.etTitle.text.toString().trim()
         val author = binding.etAuthor.text.toString().trim()
         val review = binding.etReview.text.toString().trim()
         val rating = binding.ratingBar.rating
-        
+
         if (validateInput(title, author, review)) {
             currentPost?.let { post ->
                 val updatedPost = post.copy(
@@ -150,46 +156,57 @@ class EditPostFragment : Fragment() {
                     rating = rating,
                     imagePath = selectedImagePath
                 )
-                bookPostViewModel.updatePost(updatedPost)
-                Toast.makeText(context, "Post updated successfully!", Toast.LENGTH_SHORT).show()
-                findNavController().navigateUp()
+                bookPostController.updatePost(updatedPost, this)
             }
         }
     }
-    
+
     private fun deletePost() {
         currentPost?.let { post ->
             // Delete the image file if it exists
             if (post.imagePath.isNotEmpty()) {
                 ImageUtils.deleteImage(post.imagePath)
             }
-            bookPostViewModel.deletePost(post)
-            Toast.makeText(context, "Post deleted successfully!", Toast.LENGTH_SHORT).show()
-            findNavController().navigateUp()
+            bookPostController.deletePost(post, this)
         }
     }
-    
+
     private fun validateInput(title: String, author: String, review: String): Boolean {
         if (title.isEmpty()) {
             binding.etTitle.error = "Title is required"
             return false
         }
-        
+
         if (author.isEmpty()) {
             binding.etAuthor.error = "Author is required"
             return false
         }
-        
+
         if (review.isEmpty()) {
             binding.etReview.error = "Review is required"
             return false
         }
-        
+
         return true
     }
-    
+
+    // UI Update Methods (called by controller)
+    fun showLoading(isLoading: Boolean) {
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.btnUpdatePost.isEnabled = !isLoading
+        binding.btnDeletePost.isEnabled = !isLoading
+    }
+
+    fun showError(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun navigateBack() {
+        findNavController().navigateUp()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
-} 
+}
