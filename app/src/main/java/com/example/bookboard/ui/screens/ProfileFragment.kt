@@ -106,19 +106,26 @@ class ProfileFragment : Fragment() {
                 // Upload profile picture to Cloudinary if selected
                 lifecycleScope.launch {
                     try {
+                        var uploadedImageUrl: String? = null
                         val imageUri = selectedImageUri
                         if (imageUri != null) {
+                            android.util.Log.d("ProfileFragment", "Uploading image to Cloudinary...")
                             val uploadedUrl = ImageUtils.uploadProfileImageToCloudinary(requireContext(), imageUri)
                             if (uploadedUrl != null) {
-                                authController.updateProfilePicture(uploadedUrl, this@ProfileFragment)
+                                uploadedImageUrl = uploadedUrl
+                                android.util.Log.d("ProfileFragment", "Image uploaded successfully: $uploadedUrl")
                             } else {
+                                android.util.Log.e("ProfileFragment", "Failed to upload image to Cloudinary")
                                 showError("Failed to upload profile picture")
                                 return@launch
                             }
+                        } else {
+                            android.util.Log.d("ProfileFragment", "No new image selected")
                         }
 
-                        authController.updateUserProfile(name, this@ProfileFragment)
-                        Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
+                        // Update both name and profile picture together
+                        authController.updateUserProfileAndPicture(name, uploadedImageUrl, this@ProfileFragment)
+                        Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {
                         showError(e.message ?: "Failed to update profile")
                     }

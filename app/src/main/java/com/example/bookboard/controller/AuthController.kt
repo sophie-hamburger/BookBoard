@@ -163,6 +163,34 @@ class AuthController {
         }
     }
 
+    // Update both name and profile picture together
+    fun updateUserProfileAndPicture(name: String, imagePath: String?, fragment: ProfileFragment) {
+        val currentUser = auth.currentUser ?: return
+        val database = AppDatabase.getDatabase(fragment.requireContext())
+        val userRepository = UserRepository(database.userDao())
+
+        fragment.lifecycleScope.launch {
+            try {
+                val existingUser = userRepository.getUserById(currentUser.uid)
+                if (existingUser != null) {
+                    val updatedUser = if (imagePath != null) {
+                        existingUser.copy(name = name, profileImagePath = imagePath)
+                    } else {
+                        existingUser.copy(name = name)
+                    }
+                    userRepository.updateUser(updatedUser)
+                    fragment.updateUserProfile(updatedUser)
+                    android.util.Log.d("AuthController", "Profile updated: name=$name, imagePath=$imagePath")
+                } else {
+                    android.util.Log.e("AuthController", "User not found for ID: ${currentUser.uid}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("AuthController", "Error updating profile", e)
+                fragment.showError(e.message ?: "Failed to update profile")
+            }
+        }
+    }
+
     // Check if user is logged in
     fun isUserLoggedIn(): Boolean {
         return auth.currentUser != null

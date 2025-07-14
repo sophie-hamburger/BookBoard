@@ -21,9 +21,11 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
 
         // Check if user is logged in
-        if (auth.currentUser == null) {
-            navController.navigate(R.id.loginFragment)
+        if (auth.currentUser != null) {
+            // User is already logged in, navigate to home screen
+            navController.navigate(R.id.homeFragment)
         }
+        // If user is not logged in, the navigation graph will start with loginFragment
     }
 
 }
