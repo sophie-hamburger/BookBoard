@@ -17,6 +17,11 @@ import com.example.bookboard.controller.AuthController
 import com.example.bookboard.controller.BookPostController
 import com.example.bookboard.databinding.FragmentHomeBinding
 import com.example.bookboard.model.BookPost
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.example.bookboard.data.AppDatabase
+import com.example.bookboard.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
 
 class HomeFragment : Fragment() {
 
@@ -50,6 +55,25 @@ class HomeFragment : Fragment() {
         setupClickListeners()
         setupSearchListener()
         loadPosts()
+
+        // Sync user profile from Firestore
+        syncUserProfile()
+    }
+
+    private fun syncUserProfile() {
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            val database = AppDatabase.getDatabase(requireContext())
+            val userRepository = UserRepository(database.userDao())
+
+            lifecycleScope.launch {
+                try {
+                    userRepository.syncUserFromFirestore(currentUser.uid)
+                } catch (e: Exception) {
+                    // Handle error silently - user profile sync is not critical for app functionality
+                }
+            }
+        }
     }
 
     private fun setupRecyclerView() {

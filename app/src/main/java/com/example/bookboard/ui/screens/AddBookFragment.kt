@@ -17,7 +17,6 @@ import com.example.bookboard.controller.BookPostController
 import com.example.bookboard.databinding.FragmentAddBookBinding
 import com.example.bookboard.utils.ImageUtils
 import com.squareup.picasso.Picasso
-import java.io.File
 
 class AddBookFragment : Fragment() {
 
@@ -25,7 +24,8 @@ class AddBookFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val bookPostController = BookPostController()
-    private var selectedImagePath: String = ""
+    var selectedImageUri: Uri? = null
+    private var selectedImageUrl: String = ""
 
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -73,7 +73,7 @@ class AddBookFragment : Fragment() {
         val rating = binding.ratingBar.rating
 
         if (validateInput(title, author, review)) {
-            bookPostController.createPost(title, author, review, rating, selectedImagePath, this)
+            bookPostController.createPost(title, author, review, rating, selectedImageUrl, this)
         }
     }
 
@@ -103,20 +103,15 @@ class AddBookFragment : Fragment() {
 
     private fun handleImageSelection(uri: Uri) {
         context?.let { context ->
-            val imagePath = ImageUtils.saveImageToInternalStorage(context, uri)
-            if (imagePath != null) {
-                selectedImagePath = imagePath
-                // Display the selected image
-                Picasso.get()
-                    .load(File(imagePath))
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .error(android.R.drawable.ic_menu_gallery)
-                    .into(binding.ivSelectedImage)
-                binding.ivSelectedImage.visibility = View.VISIBLE
-                binding.btnSelectImage.text = "Change Image"
-            } else {
-                Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
-            }
+            selectedImageUri = uri
+            // Display the selected image immediately using the URI
+            Picasso.get()
+                .load(uri)
+                .placeholder(android.R.drawable.ic_menu_gallery)
+                .error(android.R.drawable.ic_menu_gallery)
+                .into(binding.ivSelectedImage)
+            binding.ivSelectedImage.visibility = View.VISIBLE
+            binding.btnSelectImage.text = "Change Image"
         }
     }
 

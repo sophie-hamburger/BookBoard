@@ -1,6 +1,7 @@
 package com.example.bookboard.controller
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.lifecycleScope
 import com.example.bookboard.data.AppDatabase
 import com.example.bookboard.model.BookPost
@@ -10,6 +11,7 @@ import com.example.bookboard.ui.screens.AddBookFragment
 import com.example.bookboard.ui.screens.EditPostFragment
 import com.example.bookboard.ui.screens.HomeFragment
 import com.example.bookboard.ui.screens.ProfileFragment
+import com.example.bookboard.utils.ImageUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.util.*
@@ -59,7 +61,7 @@ class BookPostController {
         author: String,
         review: String,
         rating: Float,
-        imagePath: String,
+        imageUrl: String,
         fragment: AddBookFragment
     ) {
         val currentUser = auth.currentUser ?: return
@@ -70,6 +72,22 @@ class BookPostController {
             try {
                 fragment.showLoading(true)
 
+                // Upload image to Cloudinary if we have a selected image
+                var finalImageUrl = imageUrl
+                val selectedImageUri = fragment.selectedImageUri
+
+                if (selectedImageUri != null) {
+                    val uploadedUrl = ImageUtils.uploadImageToCloudinary(fragment.requireContext(), selectedImageUri)
+
+                    if (uploadedUrl != null) {
+                        finalImageUrl = uploadedUrl
+                    } else {
+                        fragment.showLoading(false)
+                        fragment.showError("Failed to upload image")
+                        return@launch
+                    }
+                }
+
                 val post = BookPost(
                     id = UUID.randomUUID().toString(),
                     userId = currentUser.uid,
@@ -78,7 +96,7 @@ class BookPostController {
                     author = author,
                     review = review,
                     rating = rating,
-                    imagePath = imagePath
+                    imagePath = finalImageUrl
                 )
 
                 repository.insertPost(post)
@@ -117,6 +135,12 @@ class BookPostController {
         fragment.lifecycleScope.launch {
             try {
                 fragment.showLoading(true)
+
+                // Delete image from Cloudinary if it exists
+                if (post.imagePath.isNotEmpty()) {
+                    ImageUtils.deleteImageFromCloudinary(post.imagePath)
+                }
+
                 repository.deletePost(post)
                 fragment.showLoading(false)
                 fragment.navigateBack()

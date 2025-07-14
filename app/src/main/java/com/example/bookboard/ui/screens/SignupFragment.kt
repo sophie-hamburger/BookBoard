@@ -16,6 +16,9 @@ import com.example.bookboard.R
 import com.example.bookboard.controller.AuthController
 import com.example.bookboard.databinding.FragmentSignupBinding
 import com.example.bookboard.utils.ImageUtils
+import com.squareup.picasso.Picasso
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class SignupFragment : Fragment() {
 
@@ -23,22 +26,22 @@ class SignupFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val authController = AuthController()
-    private var selectedImagePath: String = ""
+    private var selectedImageUri: Uri? = null
+    private var selectedImageUrl: String = ""
 
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                // Save the image to internal storage
-                val imagePath = ImageUtils.saveProfileImageToInternalStorage(requireContext(), uri)
-                if (imagePath != null) {
-                    selectedImagePath = imagePath
-                    binding.ivProfilePicture.setImageURI(uri)
-                    Toast.makeText(context, "Profile picture selected", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
-                }
+                selectedImageUri = uri
+                // Show immediate feedback
+                Picasso.get()
+                    .load(uri)
+                    .placeholder(android.R.drawable.ic_menu_camera)
+                    .error(android.R.drawable.ic_menu_camera)
+                    .into(binding.ivProfilePicture)
+                Toast.makeText(context, "Profile picture selected", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -79,7 +82,29 @@ class SignupFragment : Fragment() {
         val confirmPassword = binding.etConfirmPassword.text.toString().trim()
 
         if (validateInput(name, email, password, confirmPassword)) {
-            authController.signupUser(email, password, name, selectedImagePath, this)
+            // Upload profile picture to Cloudinary if selected
+            lifecycleScope.launch {
+                try {
+                    showLoading(true)
+
+                    val imageUri = selectedImageUri
+                    if (imageUri != null) {
+                        val uploadedUrl = ImageUtils.uploadProfileImageToCloudinary(requireContext(), imageUri)
+                        if (uploadedUrl != null) {
+                            selectedImageUrl = uploadedUrl
+                        } else {
+                            showLoading(false)
+                            showError("Failed to upload profile picture")
+                            return@launch
+                        }
+                    }
+
+                    authController.signupUser(email, password, name, selectedImageUrl, this@SignupFragment)
+                } catch (e: Exception) {
+                    showLoading(false)
+                    showError(e.message ?: "Failed to create account")
+                }
+            }
         }
     }
 

@@ -30,11 +30,11 @@ class BookPostRepository(
 
     suspend fun insertPost(post: BookPost) {
         withContext(Dispatchers.IO) {
-            // Save to local database
-            bookPostDao.insertPost(post)
-
-            // Save to Firestore
             try {
+                // Save to local database
+                bookPostDao.insertPost(post)
+
+                // Save to Firestore
                 firestore.collection("posts").document(post.id).set(post).await()
             } catch (e: Exception) {
                 // Handle error - could implement retry mechanism
@@ -44,11 +44,11 @@ class BookPostRepository(
 
     suspend fun updatePost(post: BookPost) {
         withContext(Dispatchers.IO) {
-            // Update local database
-            bookPostDao.updatePost(post)
-
-            // Update Firestore
             try {
+                // Update local database
+                bookPostDao.updatePost(post)
+
+                // Update Firestore
                 firestore.collection("posts").document(post.id).set(post).await()
             } catch (e: Exception) {
                 // Handle error
@@ -58,11 +58,11 @@ class BookPostRepository(
 
     suspend fun deletePost(post: BookPost) {
         withContext(Dispatchers.IO) {
-            // Delete from local database
-            bookPostDao.deletePost(post)
-
-            // Delete from Firestore
             try {
+                // Delete from local database
+                bookPostDao.deletePost(post)
+
+                // Delete from Firestore
                 firestore.collection("posts").document(post.id).delete().await()
             } catch (e: Exception) {
                 // Handle error

@@ -22,7 +22,9 @@ import com.example.bookboard.databinding.FragmentProfileBinding
 import com.example.bookboard.model.BookPost
 import com.example.bookboard.model.User
 import com.example.bookboard.utils.ImageUtils
-import java.io.File
+import com.squareup.picasso.Picasso
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
 
@@ -33,22 +35,21 @@ class ProfileFragment : Fragment() {
     private val bookPostController = BookPostController()
     private lateinit var userPostsAdapter: BookAdapter
 
+    private var selectedImageUri: Uri? = null
+
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                // Save the image to internal storage
-                val imagePath = ImageUtils.saveProfileImageToInternalStorage(requireContext(), uri)
-                if (imagePath != null) {
-                    // Update the profile picture in database
-                    authController.updateProfilePicture(imagePath, this)
-                    // Show immediate feedback
-                    binding.ivProfilePicture.setImageURI(uri)
-                    Toast.makeText(context, "Profile picture updated", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
-                }
+                selectedImageUri = uri
+                // Show immediate feedback
+                Picasso.get()
+                    .load(uri)
+                    .placeholder(android.R.drawable.ic_menu_camera)
+                    .error(android.R.drawable.ic_menu_camera)
+                    .into(binding.ivProfilePicture)
+                Toast.makeText(context, "Profile picture selected", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -102,8 +103,26 @@ class ProfileFragment : Fragment() {
         binding.btnSaveProfile.setOnClickListener {
             val name = binding.etProfileName.text.toString().trim()
             if (name.isNotEmpty()) {
-                authController.updateUserProfile(name, this)
-                Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
+                // Upload profile picture to Cloudinary if selected
+                lifecycleScope.launch {
+                    try {
+                        val imageUri = selectedImageUri
+                        if (imageUri != null) {
+                            val uploadedUrl = ImageUtils.uploadProfileImageToCloudinary(requireContext(), imageUri)
+                            if (uploadedUrl != null) {
+                                authController.updateProfilePicture(uploadedUrl, this@ProfileFragment)
+                            } else {
+                                showError("Failed to upload profile picture")
+                                return@launch
+                            }
+                        }
+
+                        authController.updateUserProfile(name, this@ProfileFragment)
+                        Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        showError(e.message ?: "Failed to update profile")
+                    }
+                }
             } else {
                 binding.etProfileName.error = "Name is required"
             }
@@ -131,18 +150,11 @@ class ProfileFragment : Fragment() {
 
         // Load profile picture
         if (user.profileImagePath.isNotEmpty()) {
-            val file = File(user.profileImagePath)
-            if (file.exists()) {
-                try {
-                    binding.ivProfilePicture.setImageURI(Uri.fromFile(file))
-                } catch (e: Exception) {
-                    // If there's an error loading the image, show a placeholder
-                    binding.ivProfilePicture.setImageResource(android.R.drawable.ic_menu_camera)
-                }
-            } else {
-                // File doesn't exist, show placeholder
-                binding.ivProfilePicture.setImageResource(android.R.drawable.ic_menu_camera)
-            }
+            Picasso.get()
+                .load(user.profileImagePath)
+                .placeholder(android.R.drawable.ic_menu_camera)
+                .error(android.R.drawable.ic_menu_camera)
+                .into(binding.ivProfilePicture)
         } else {
             // No profile image path, show placeholder
             binding.ivProfilePicture.setImageResource(android.R.drawable.ic_menu_camera)

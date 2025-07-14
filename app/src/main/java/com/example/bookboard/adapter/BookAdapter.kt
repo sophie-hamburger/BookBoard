@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.bookboard.databinding.ItemBookBinding
 import com.example.bookboard.model.BookPost
 import com.squareup.picasso.Picasso
-import java.io.File
 
 class BookAdapter(
     private val onItemClick: (BookPost) -> Unit
@@ -38,24 +37,19 @@ class BookAdapter(
                 tvAuthor.text = post.author
                 tvReview.text = post.review
                 ratingBar.rating = post.rating
-                
+
                 // Load image if path exists
                 if (post.imagePath.isNotEmpty()) {
-                    val imageFile = File(post.imagePath)
-                    if (imageFile.exists()) {
-                        Picasso.get()
-                            .load(imageFile)
-                            .placeholder(android.R.drawable.ic_menu_gallery)
-                            .error(android.R.drawable.ic_menu_gallery)
-                            .into(ivBookCover)
-                        ivBookCover.visibility = android.view.View.VISIBLE
-                    } else {
-                        ivBookCover.visibility = android.view.View.GONE
-                    }
+                    Picasso.get()
+                        .load(post.imagePath)
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .error(android.R.drawable.ic_menu_gallery)
+                        .into(ivBookCover)
+                    ivBookCover.visibility = android.view.View.VISIBLE
                 } else {
                     ivBookCover.visibility = android.view.View.GONE
                 }
-                
+
                 root.setOnClickListener {
                     onItemClick(post)
                 }

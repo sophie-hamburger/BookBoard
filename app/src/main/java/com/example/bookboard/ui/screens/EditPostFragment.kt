@@ -18,7 +18,7 @@ import com.example.bookboard.databinding.FragmentEditPostBinding
 import com.example.bookboard.model.BookPost
 import com.example.bookboard.utils.ImageUtils
 import com.squareup.picasso.Picasso
-import java.io.File
+
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
@@ -31,7 +31,8 @@ class EditPostFragment : Fragment() {
     private val args: EditPostFragmentArgs by navArgs()
 
     private var currentPost: BookPost? = null
-    private var selectedImagePath: String = ""
+    private var selectedImageUri: Uri? = null
+    private var selectedImageUrl: String = ""
 
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -71,7 +72,7 @@ class EditPostFragment : Fragment() {
                 val post = posts.find { it.id == args.postId }
                 if (post != null) {
                     currentPost = post
-                    selectedImagePath = post.imagePath
+                    selectedImageUrl = post.imagePath
                     populateFields(post)
                 } else {
                     showError("Post not found")
@@ -90,16 +91,13 @@ class EditPostFragment : Fragment() {
 
         // Display image if exists
         if (post.imagePath.isNotEmpty()) {
-            val imageFile = File(post.imagePath)
-            if (imageFile.exists()) {
-                Picasso.get()
-                    .load(imageFile)
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .error(android.R.drawable.ic_menu_gallery)
-                    .into(binding.ivSelectedImage)
-                binding.ivSelectedImage.visibility = View.VISIBLE
-                binding.btnSelectImage.text = "Change Image"
-            }
+            Picasso.get()
+                .load(post.imagePath)
+                .placeholder(android.R.drawable.ic_menu_gallery)
+                .error(android.R.drawable.ic_menu_gallery)
+                .into(binding.ivSelectedImage)
+            binding.ivSelectedImage.visibility = View.VISIBLE
+            binding.btnSelectImage.text = "Change Image"
         }
     }
 
@@ -128,20 +126,15 @@ class EditPostFragment : Fragment() {
 
     private fun handleImageSelection(uri: Uri) {
         context?.let { context ->
-            val imagePath = ImageUtils.saveImageToInternalStorage(context, uri)
-            if (imagePath != null) {
-                selectedImagePath = imagePath
-                // Display the selected image
-                Picasso.get()
-                    .load(File(imagePath))
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .error(android.R.drawable.ic_menu_gallery)
-                    .into(binding.ivSelectedImage)
-                binding.ivSelectedImage.visibility = View.VISIBLE
-                binding.btnSelectImage.text = "Change Image"
-            } else {
-                Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
-            }
+            selectedImageUri = uri
+            // Display the selected image immediately using the URI
+            Picasso.get()
+                .load(uri)
+                .placeholder(android.R.drawable.ic_menu_gallery)
+                .error(android.R.drawable.ic_menu_gallery)
+                .into(binding.ivSelectedImage)
+            binding.ivSelectedImage.visibility = View.VISIBLE
+            binding.btnSelectImage.text = "Change Image"
         }
     }
 
@@ -153,23 +146,48 @@ class EditPostFragment : Fragment() {
 
         if (validateInput(title, author, review)) {
             currentPost?.let { post ->
-                val updatedPost = post.copy(
-                    title = title,
-                    author = author,
-                    review = review,
-                    rating = rating,
-                    imagePath = selectedImagePath
-                )
-                bookPostController.updatePost(updatedPost, this)
+                // Upload new image to Cloudinary if selected
+                lifecycleScope.launch {
+                    try {
+                        showLoading(true)
+
+                        var finalImageUrl = selectedImageUrl
+                        val imageUri = selectedImageUri
+                        if (imageUri != null) {
+                            val uploadedUrl = ImageUtils.uploadImageToCloudinary(requireContext(), imageUri)
+                            if (uploadedUrl != null) {
+                                finalImageUrl = uploadedUrl
+                            } else {
+                                showLoading(false)
+                                showError("Failed to upload image")
+                                return@launch
+                            }
+                        }
+
+                        val updatedPost = post.copy(
+                            title = title,
+                            author = author,
+                            review = review,
+                            rating = rating,
+                            imagePath = finalImageUrl
+                        )
+                        bookPostController.updatePost(updatedPost, this@EditPostFragment)
+                    } catch (e: Exception) {
+                        showLoading(false)
+                        showError(e.message ?: "Failed to update post")
+                    }
+                }
             }
         }
     }
 
     private fun deletePost() {
         currentPost?.let { post ->
-            // Delete the image file if it exists
+            // Delete the image from Cloudinary if it exists
             if (post.imagePath.isNotEmpty()) {
-                ImageUtils.deleteImage(post.imagePath)
+                lifecycleScope.launch {
+                    ImageUtils.deleteImageFromCloudinary(post.imagePath)
+                }
             }
             bookPostController.deletePost(post, this)
         }

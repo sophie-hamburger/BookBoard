@@ -100,6 +100,9 @@ class AuthController {
 
         fragment.lifecycleScope.launch {
             try {
+                // First try to sync from Firestore
+                userRepository.syncUserFromFirestore(currentUser.uid)
+
                 val user = userRepository.getUserById(currentUser.uid)
                 if (user != null) {
                     fragment.updateUserProfile(user)
